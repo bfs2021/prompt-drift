@@ -127,6 +127,6 @@ def scan_directory(root: Path) -> dict:
     evals = collect_evals(root)
     return {
         "root": str(root),
-        "prompts": [p._asdict() for p in prompts],
-        "evals": [e._asdict() for e in evals],
+        "prompts": [{**p._asdict(), "path": str(p.path)} for p in prompts],
+        "evals": [{**e._asdict(), "path": str(e.path)} for e in evals],
     }

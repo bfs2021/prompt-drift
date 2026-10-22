@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 from prompt_drift.detectors import _prompt_eval_match, detect_drift
-from prompt_drift.scanner import collect_evals, collect_prompts
+from prompt_drift.scanner import collect_evals, collect_prompts, scan_directory
 
 ADVISORY = "potential_drift"
 
@@ -265,3 +265,22 @@ class TestVersionMatchesTheDistribution:
         import prompt_drift
 
         assert prompt_drift.__version__ == version("prompt-drift")
+
+
+class TestScanDirectoryIsJsonSerializable:
+    """#27: ``scan_directory`` promised a report but returned Path objects."""
+
+    def test_paths_are_strings_and_document_serializes(self, tmp_path: Path):
+        (tmp_path / "prompts").mkdir()
+        (tmp_path / "prompts" / "summarizer.prompt").write_text("Summarize.", encoding="utf-8")
+        (tmp_path / "evals").mkdir()
+        (tmp_path / "evals" / "test_summarizer.py").write_text(
+            "def test_summarizer(): pass", encoding="utf-8"
+        )
+
+        report = scan_directory(tmp_path)
+        document = json.dumps(report)
+
+        assert report["prompts"][0]["path"].endswith("summarizer.prompt")
+        assert report["evals"][0]["path"].endswith("test_summarizer.py")
+        assert json.loads(document)["root"] == str(tmp_path)
